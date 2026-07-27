@@ -69,7 +69,13 @@ if ! ss -lnt 2>/dev/null | grep -q ":$PORT"; then
 fi
 
 # Run the bridge client against the socket.
-if "$ROOT/.venv/bin/python" "$ROOT/renode/bridge/uart_bridge.py" 127.0.0.1 "$PORT"; then
+# Fall back to python3 if the uv venv isn't present (e.g. in CI where the Renode
+# job doesn't sync the Python env).
+PYTHON="${SPECTRAL_SCOUT_PYTHON:-$ROOT/.venv/bin/python}"
+if [ ! -x "$PYTHON" ]; then
+    PYTHON="python3"
+fi
+if "$PYTHON" "$ROOT/renode/bridge/uart_bridge.py" 127.0.0.1 "$PORT"; then
     echo "PASS: virtual UART bridge round-trip succeeded"
     exit 0
 fi

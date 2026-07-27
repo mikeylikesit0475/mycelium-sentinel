@@ -69,7 +69,12 @@ fi
 
 # Stream a canned waveform with clear spikes. If the firmware detects and
 # emits events, the GPIO valve line was driven (same code path).
-if "$ROOT/.venv/bin/python" "$ROOT/renode/bridge/signal_chain.py" 127.0.0.1 "$PORT" >/dev/null 2>&1; then
+# Fall back to python3 if the uv venv isn't present (e.g. in CI).
+PYTHON="${SPECTRAL_SCOUT_PYTHON:-$ROOT/.venv/bin/python}"
+if [ ! -x "$PYTHON" ]; then
+    PYTHON="python3"
+fi
+if "$PYTHON" "$ROOT/renode/bridge/signal_chain.py" 127.0.0.1 "$PORT" >/dev/null 2>&1; then
     echo "PASS: firmware detected spikes and drove the valve GPIO (closed loop)"
     exit 0
 fi

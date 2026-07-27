@@ -118,6 +118,14 @@ jobs:
       - name: Build firmware binary
         run: cargo build --release --features bin-build --bin firmware-bin
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Sync Python env (for the UART bridge client)
+        run: uv sync --all-packages
+
       - name: Install Mono (Renode runtime)
         run: |
           sudo apt-get update

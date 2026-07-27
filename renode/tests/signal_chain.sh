@@ -64,7 +64,13 @@ if ! ss -lnt 2>/dev/null | grep -q ":$PORT"; then
     exit 1
 fi
 
-if "$ROOT/.venv/bin/python" "$ROOT/renode/bridge/signal_chain.py" 127.0.0.1 "$PORT"; then
+# Fall back to python3 if the uv venv isn't present (e.g. in CI where the Renode
+# job doesn't sync the Python env).
+PYTHON="${SPECTRAL_SCOUT_PYTHON:-$ROOT/.venv/bin/python}"
+if [ ! -x "$PYTHON" ]; then
+    PYTHON="python3"
+fi
+if "$PYTHON" "$ROOT/renode/bridge/signal_chain.py" 127.0.0.1 "$PORT"; then
     echo "PASS: on-target signal-chain test succeeded"
     exit 0
 fi
