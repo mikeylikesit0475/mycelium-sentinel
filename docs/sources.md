@@ -36,8 +36,19 @@ formula — see, e.g., Hawkes 1971).
 ## Electrode / ADC front end
 
 - 1/f noise, 50 Hz mains + harmonics, slow DC drift, motion artifact — standard
-  instrumentation models. **TODO (Sprint 1.1):** cite the noise spectral density
-  assumption and the mains amplitude.
+  instrumentation models.
+
+**Parameters used in `sim/sim/electrode.py`:**
+
+| Parameter | Value | Basis |
+|-----------|-------|-------|
+| Sample rate | 1000 Hz | ADS1115-class ADC, conservative for sub-mV bio signals |
+| Mains frequency | 50 Hz | UK/EU mains |
+| Mains amplitude | 0.05 mV | typical capacitive-coupled hum on a high-impedance electrode |
+| 1/f noise floor | 0.02 mV RMS | typical Ag/AgCl electrode + frontend noise |
+| DC drift amplitude | 0.5 mV p-p | electrode polarisation drift over minutes |
+| Motion artifact | 1.0 mV step, 200 ms decay | mechanical disturbance of the electrode |
+| Spike kernel | biphasic, 5 ms wide, ~0.6/1.4 ms Gaussians | standard extracellular AP shape |
 
 ## Advection–diffusion
 
