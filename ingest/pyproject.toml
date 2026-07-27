@@ -11,6 +11,11 @@ dependencies = [
   "xgboost>=2.0",
 ]
 
+[dependency-groups]
+dev = [
+  "scikit-learn>=1.4",
+]
+
 [tool.uv]
 package = true
 
