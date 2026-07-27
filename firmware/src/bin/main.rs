@@ -52,6 +52,16 @@ const CR1_UE: u32 = 1 << 13;
 const CR1_TE: u32 = 1 << 3;
 const CR1_RE: u32 = 1 << 2;
 
+// GPIO D (the UserLED pin, per stm32f4_discovery.repl). Pin 12 is wired to
+// the LED; we drive it high when a spike is detected so the simulator can
+// read it via Renode and actuate the neutralisation valve (Sprint 2.4).
+const GPIOD_BASE: usize = 0x4002_0C00;
+const GPIO_MODER: usize = 0x00;
+const GPIO_ODR: usize = 0x14;
+const RCC_AHB1ENR_OFFSET: usize = 0x30;
+const RCC_AHB1ENR_GPIOD: u32 = 1 << 3;
+const VALVE_PIN: u32 = 12;
+
 /// One channel's signal chain: high-pass → notch → spike detector → features.
 struct ChannelPipeline {
     hp: HighPassIir,
@@ -125,6 +135,41 @@ fn uart4_init() {
         write_volatile(cr2, 0);
         write_volatile(brr, 364);
         write_volatile(cr1, CR1_UE | CR1_TE | CR1_RE);
+    }
+}
+
+/// Initialise GPIO D pin 12 as a push-pull output (the valve actuation line).
+fn valve_gpio_init() {
+    // Enable the GPIOD clock on AHB1.
+    let ahb1enr = (RCC_BASE + RCC_AHB1ENR_OFFSET) as *mut u32;
+    let mut v = unsafe { read_volatile(ahb1enr) };
+    v |= RCC_AHB1ENR_GPIOD;
+    unsafe {
+        write_volatile(ahb1enr, v);
+    }
+    // Set pin 12 to output mode (MODER bits 2*pin : 2*pin+1 = 01).
+    let moder = (GPIOD_BASE + GPIO_MODER) as *mut u32;
+    let mut m = unsafe { read_volatile(moder) };
+    m &= !(0b11 << (2 * VALVE_PIN));
+    m |= 0b01 << (2 * VALVE_PIN);
+    unsafe {
+        write_volatile(moder, m);
+    }
+    // Start with the valve off (pin low).
+    valve_set(false);
+}
+
+/// Drive the valve actuation line high (true) or low (false).
+fn valve_set(on: bool) {
+    let odr = (GPIOD_BASE + GPIO_ODR) as *mut u32;
+    let mut v = unsafe { read_volatile(odr) };
+    if on {
+        v |= 1 << VALVE_PIN;
+    } else {
+        v &= !(1 << VALVE_PIN);
+    }
+    unsafe {
+        write_volatile(odr, v);
     }
 }
 
@@ -203,7 +248,9 @@ fn handle_sample_frame(channel: u8, payload: &[u8]) {
     }
 }
 
-/// Pack features into a frame and send it on UART4 TX.
+/// Pack features into a frame and send it on UART4 TX. Also drives the valve
+/// GPIO high so the simulator can read it via Renode and actuate the
+/// neutralisation (Sprint 2.4).
 fn emit_event_frame(channel: u8, features: &SpikeFeatures) {
     let mut payload = [0u8; firmware::protocol::MAX_PAYLOAD];
     let n = pack_features(features, &mut payload).unwrap_or(0);
@@ -213,6 +260,8 @@ fn emit_event_frame(channel: u8, features: &SpikeFeatures) {
             uart_write_frame(&f);
         }
     }
+    // Drive the valve line high: a spike was detected, actuate neutralisation.
+    valve_set(true);
 }
 
 /// Dispatch an incoming frame: channel 0xFF = echo test, 0-15 = sample frame.
@@ -230,6 +279,7 @@ fn handle_frame(frame: &Frame) {
 fn main() -> ! {
     init_pipelines();
     uart4_init();
+    valve_gpio_init();
     boot_banner();
 
     let mut decoder = FrameDecoder::new();

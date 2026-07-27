@@ -67,6 +67,10 @@ bridge-test: firmware-build
 signal-chain-test: firmware-build
 	./renode/tests/signal_chain.sh
 
+.PHONY: valve-test
+valve-test: firmware-build
+	./renode/tests/valve_actuation.sh
+
 .PHONY: test-host
 test-host:
 	$(CARGO) test --features std --target $(HOST_TARGET)
@@ -97,7 +101,7 @@ test-py:
 lint: clippy fmt-check ruff
 
 .PHONY: test
-test: test-host test-py renode-test bridge-test signal-chain-test
+test: test-host test-py renode-test bridge-test signal-chain-test valve-test
 
 .PHONY: ci
 ci: lint test

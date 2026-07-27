@@ -144,3 +144,6 @@ jobs:
 
       - name: Run on-target signal-chain test
         run: ./renode/tests/signal_chain.sh
+
+      - name: Run on-target valve actuation test
+        run: ./renode/tests/valve_actuation.sh
