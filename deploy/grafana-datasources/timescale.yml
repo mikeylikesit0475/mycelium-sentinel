@@ -1,0 +1,14 @@
+apiVersion: 1
+datasources:
+  - name: TimescaleDB
+    type: postgres
+    access: proxy
+    url: timescale:5432
+    database: mycelium
+    user: mycelium
+    secureJsonData:
+      password: mycelium
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: true
