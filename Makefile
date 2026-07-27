@@ -122,3 +122,27 @@ clean:
 	$(CARGO) clean
 	$(UV) clean
 	rm -rf .pytest_cache .ruff_cache .coverage
+
+# --- Demo orchestration -------------------------------------------------------
+
+.PHONY: sim-up
+sim-up:
+	docker compose -f deploy/docker-compose.yml up -d
+
+.PHONY: sim-down
+sim-down:
+	docker compose -f deploy/docker-compose.yml down
+
+.PHONY: firmware-up
+firmware-up: firmware-build
+	renode --disable-xwt --console \
+	  -e "i @renode/stm32f4_mycelium.resc" \
+	  -e "start" \
+	  -e 'emulation RunFor "01:00:00"'
+
+.PHONY: inject-plume
+inject-plume:
+	@echo "Plume injection is handled by the simulator (sim/sim/lead_time.py)."
+	@echo "Run the lead-time measurement with:"
+	@echo "  uv run pytest sim/tests/test_lead_time.py -v"
+	@echo "  uv run python -c 'from sim.lead_time import measure_lead_time; print(measure_lead_time((3,1)))'"

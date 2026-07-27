@@ -2,12 +2,17 @@
 
 Live, no code edits. **Never describe a capability that doesn't work.**
 
+> **Demo GIF:** `docs/demo.gif` (placeholder — record with `asciinema` or a
+> screen capture during a live run). The GIF should show: the Renode console
+> with the boot banner, the Grafana dashboard with the sim-clock factor
+> visible, and the GitHub Actions CI tab going green.
+
 ## Pre-flight
 
 ```bash
-make sim-up          # simulator + mosquitto + timescale + grafana
+make sim-up          # simulator + mosquitto + timescale + grafana (docker compose)
 make firmware-up     # renode boots the firmware binary
-open http://localhost:3000     # grafana
+open http://localhost:3000     # grafana (admin/admin)
 ```
 
 Have the Renode console visible in a second window — **that window is the demo**. Have the
