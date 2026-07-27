@@ -27,14 +27,17 @@ they're being shown, which is the only version of this project worth publishing.
 **Context.** The concept implies an ESP32-class MCU. Renode's ESP32 support is immature;
 its nRF52840 and STM32F4 platforms are mature and well documented.
 
-**Decision.** Target nRF52840 (or STM32F4 — decided in Sprint 0.2 on whichever proves
-smoother). Emulator fidelity outweighs the bill of materials for a board that will never be
-purchased.
+**Decision.** Target **STM32F407** (the Discovery board). Renode ships first-class
+platform descriptions for the STM32F4 Discovery (`stm32f4_discovery-kit.repl`), the
+Cortex-M4 core is what the concept calls for, and the on-chip UARTs give us an
+observable output channel with no extra wiring. The nRF52840 was the alternative;
+both would have worked, STM32F4 had more example `.resc` scripts. Emulator fidelity
+outweighs the bill of materials for a board that will never be purchased.
 
-**Consequence.** The demo becomes reliable and CI-testable. If the project ever moves to
+**Consequence.** The demo is reliable and CI-testable. If the project ever moves to
 real hardware, an nRF52840 dev kit is ~£40 — cheaper than the ESP32-plus-instrumentation
-path anyway. The generalisable point, and the reason this is an ADR: **when the test harness
-is the deliverable, choose the hardware your harness can model.**
+path anyway. The generalisable point, and the reason this is an ADR: **when the test
+harness is the deliverable, choose the hardware your harness can model.**
 
 ---
 

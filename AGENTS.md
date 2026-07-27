@@ -11,7 +11,13 @@ just pins down the environment so the next session doesn't have to rediscover it
 - Python via `uv` (workspace at repo root, members `sim/` and `ingest/`). `uv sync`
   sets up `.venv`. `pytest` and `pytest-cov` are in the `dev` dependency group.
 - `ruff` is available standalone in `~/.local/bin` and also through `uv run ruff`.
-- Renode is **not** installed locally as of Sprint 0.1. Sprint 0.2 installs it.
+- Renode 1.16.1 is installed user-local at `~/.local/renode/`, symlinked onto
+  `~/.local/bin/renode`. It runs under system Mono 6.14. The platform description
+  for the STM32F4 Discovery board lives in the Renode install
+  (`~/.local/renode/platforms/boards/stm32f4_discovery-kit.repl`). The project's
+  startup script is `renode/stm32f4_mycelium.resc`; it loads the firmware from
+  `target/thumbv7em-none-eabi/release/firmware-bin` by default and the path can
+  be overridden with `bin=...` on the `i @...resc` command (used by CI in 0.3).
 
 ## Commands
 
@@ -21,6 +27,8 @@ Run from the repo root.
 |------|---------|
 | Host firmware unit tests (DSP, protocol) | `make test-host` |
 | Build firmware binary for the embedded target | `make firmware-build` |
+| Boot firmware in Renode (console) | `make renode-run` |
+| Boot firmware in Renode headless, dump UART | `make renode-headless` |
 | Clippy gate (host + target) | `make clippy` |
 | Rustfmt gate | `make fmt-check` |
 | Python lint | `make ruff` |

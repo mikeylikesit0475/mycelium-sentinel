@@ -17,20 +17,43 @@ FW_BIN      := firmware-bin
 help:
 	@echo "Mycelium Sentinel — common targets:"
 	@echo "  make firmware-build   build the no_std firmware binary for thumbv7em-none-eabi"
-	@echo "  make test-host        host unit tests for DSP/protocol blocks"
-	@echo "  make clippy           clippy -D warnings (host + target)"
-	@echo "  make fmt-check        rustfmt gate"
-	@echo "  make ruff             ruff lint + format check (sim, ingest)"
-	@echo "  make test-py          pytest (sim, ingest)"
-	@echo "  make lint             all lint gates"
-	@echo "  make test             all test gates"
-	@echo "  make ci               lint + test (CI parity)"
+	@echo "  make renode-run        boot the firmware in Renode (console), 2s run"
+	@echo "  make renode-headless   boot the firmware in Renode headless, dump UART"
+	@echo "  make test-host         host unit tests for DSP/protocol blocks"
+	@echo "  make clippy            clippy -D warnings (host + target)"
+	@echo "  make fmt-check         rustfmt gate"
+	@echo "  make ruff              ruff lint + format check (sim, ingest)"
+	@echo "  make test-py           pytest (sim, ingest)"
+	@echo "  make lint              all lint gates"
+	@echo "  make test              all test gates"
+	@echo "  make ci                lint + test (CI parity)"
 
 # --- Rust ---------------------------------------------------------------------
 
 .PHONY: firmware-build
 firmware-build:
 	$(CARGO) build --release --features bin-build --bin $(FW_BIN)
+
+.PHONY: renode-run
+renode-run: firmware-build
+	renode --disable-xwt --console \
+	  -e "i @renode/stm32f4_mycelium.resc" \
+	  -e "start" \
+	  -e 'emulation RunFor "00:00:02"' \
+	  -e "quit"
+
+.PHONY: renode-headless
+renode-headless: firmware-build
+	@rm -f /tmp/mycelium-uart.txt
+	renode --disable-xwt --console \
+	  -e "i @renode/stm32f4_mycelium.resc" \
+	  -e "uart4 CreateFileBackend @/tmp/mycelium-uart.txt true" \
+	  -e "start" \
+	  -e 'emulation RunFor "00:00:01"' \
+	  -e "quit" >/tmp/mycelium-renode.log 2>&1
+	@echo "--- UART output ---"
+	@cat /tmp/mycelium-uart.txt
+	@echo "--- (renode log: /tmp/mycelium-renode.log) ---"
 
 .PHONY: test-host
 test-host:

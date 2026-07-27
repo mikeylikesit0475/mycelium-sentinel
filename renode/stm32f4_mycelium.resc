@@ -1,0 +1,22 @@
+:name: Mycelium Sentinel — STM32F4 Discovery
+:description: Boots the Mycelium Sentinel firmware on an emulated STM32F407 and shows the UART4 boot banner. The firmware path defaults to the local build output; override with `bin=/path/to/firmware-bin` on the `i` command.
+
+using sysbus
+mach create "Mycelium_Sentinel"
+machine LoadPlatformDescription @platforms/boards/stm32f4_discovery-kit.repl
+
+cpu PerformanceInMips 125
+
+# Default firmware path: the local release build. Override from the monitor
+# prompt with `i @renode/stm32f4_mycelium.resc bin=/abs/path/to/firmware-bin`.
+$bin?="/home/michaelf/Desktop/mycelium-sentinel/target/thumbv7em-none-eabi/release/firmware-bin"
+
+# Show the UART4 output in the Renode log/analyzer.
+showAnalyzer sysbus.uart4
+
+macro reset
+"""
+    sysbus LoadELF $bin
+"""
+
+runMacro $reset
