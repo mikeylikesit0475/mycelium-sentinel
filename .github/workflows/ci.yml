@@ -141,3 +141,6 @@ jobs:
 
       - name: Run virtual UART bridge test
         run: ./renode/tests/uart_bridge.sh
+
+      - name: Run on-target signal-chain test
+        run: ./renode/tests/signal_chain.sh

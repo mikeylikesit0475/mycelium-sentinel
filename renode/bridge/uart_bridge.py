@@ -66,7 +66,8 @@ def main() -> int:
     port = int(sys.argv[2]) if len(sys.argv) > 2 else 34567
 
     payload = struct.pack("<HHf", 7, 42, 1.5)
-    sent = encode_frame(channel=3, payload=payload)
+    # Channel 0xFF is reserved for the echo/bridge test (not a sample channel).
+    sent = encode_frame(channel=0xFF, payload=payload)
 
     print(f"[bridge] connecting to {host}:{port} ...")
     with socket.create_connection((host, port), timeout=10) as sock:
@@ -91,8 +92,8 @@ def main() -> int:
         chan, echoed = recv_frame(sock, timeout=5.0)
         print(f"[bridge] received frame: channel={chan} payload={echoed.hex()}")
 
-        if chan != 3:
-            print(f"FAIL: expected channel 3, got {chan}", file=sys.stderr)
+        if chan != 0xFF:
+            print(f"FAIL: expected channel 0xFF, got {chan}", file=sys.stderr)
             return 1
         if not echoed or echoed[0] != ACK_MARKER:
             print(f"FAIL: expected ACK marker {ACK_MARKER:#x}, got {echoed!r}", file=sys.stderr)

@@ -63,6 +63,10 @@ renode-test: firmware-build
 bridge-test: firmware-build
 	./renode/tests/uart_bridge.sh
 
+.PHONY: signal-chain-test
+signal-chain-test: firmware-build
+	./renode/tests/signal_chain.sh
+
 .PHONY: test-host
 test-host:
 	$(CARGO) test --features std --target $(HOST_TARGET)
@@ -93,7 +97,7 @@ test-py:
 lint: clippy fmt-check ruff
 
 .PHONY: test
-test: test-host test-py renode-test
+test: test-host test-py renode-test bridge-test signal-chain-test
 
 .PHONY: ci
 ci: lint test
