@@ -150,6 +150,7 @@ impl SpikeDetector {
 
     /// A reference to the rolling window contents (for tests and telemetry).
     #[cfg(test)]
+    #[allow(dead_code)]
     fn window_slice(&self) -> &[f32] {
         &self.window[..self.filled]
     }

@@ -385,7 +385,7 @@ mod tests {
     #[test]
     fn two_detections_compute_isi() {
         let mut ex = FeatureExtractor::new();
-        ex.record(2.0, 100, 1000.0);
+        let _ = ex.record(2.0, 100, 1000.0);
         let f = ex.record(3.0, 300, 1000.0);
         assert_eq!(f.count, 2);
         assert!(
@@ -402,7 +402,7 @@ mod tests {
     fn amplitude_stats_over_window() {
         let mut ex = FeatureExtractor::new();
         for &a in &[1.0_f32, 2.0, 3.0, 4.0, 5.0] {
-            ex.record(a, 0, 1000.0);
+            let _ = ex.record(a, 0, 1000.0);
         }
         let f = ex.compute(1000.0);
         assert!((f.amplitude_mean - 3.0).abs() < 1e-5);
@@ -416,10 +416,10 @@ mod tests {
         let mut ex = FeatureExtractor::new();
         // HISTOGRAM_MAX = 10, 8 bins -> bin width 1.25.
         // 0.5 -> bin 0, 2.0 -> bin 1, 5.0 -> bin 4, 9.0 -> bin 7.
-        ex.record(0.5, 0, 1000.0);
-        ex.record(2.0, 1, 1000.0);
-        ex.record(5.0, 2, 1000.0);
-        ex.record(9.0, 3, 1000.0);
+        let _ = ex.record(0.5, 0, 1000.0);
+        let _ = ex.record(2.0, 1, 1000.0);
+        let _ = ex.record(5.0, 2, 1000.0);
+        let _ = ex.record(9.0, 3, 1000.0);
         let f = ex.compute(1000.0);
         assert_eq!(f.histogram[0], 1);
         assert_eq!(f.histogram[1], 1);
@@ -432,7 +432,7 @@ mod tests {
     fn window_caps_at_history_len() {
         let mut ex = FeatureExtractor::new();
         for i in 0..(HISTORY_LEN + 10) {
-            ex.record(1.0, i as u64, 1000.0);
+            let _ = ex.record(1.0, i as u64, 1000.0);
         }
         let f = ex.compute(1000.0);
         assert_eq!(f.count, HISTORY_LEN as u8);
@@ -445,11 +445,11 @@ mod tests {
         let mut ex = FeatureExtractor::new();
         // Long ISIs.
         for i in 0u64..20 {
-            ex.record(1.0, i * 1000, 1000.0);
+            let _ = ex.record(1.0, i * 1000, 1000.0);
         }
         // Short ISIs at the end.
         for j in 0u64..10 {
-            ex.record(1.0, 20_000 + j * 10, 1000.0);
+            let _ = ex.record(1.0, 20_000 + j * 10, 1000.0);
         }
         let f = ex.compute(1000.0);
         assert!(
@@ -506,8 +506,8 @@ mod tests {
     #[test]
     fn reset_clears_history() {
         let mut ex = FeatureExtractor::new();
-        ex.record(2.0, 100, 1000.0);
-        ex.record(3.0, 200, 1000.0);
+        let _ = ex.record(2.0, 100, 1000.0);
+        let _ = ex.record(3.0, 200, 1000.0);
         assert_eq!(ex.len(), 2);
         ex.reset();
         assert!(ex.is_empty());

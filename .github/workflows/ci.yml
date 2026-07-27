@@ -128,7 +128,7 @@ jobs:
           set -eu
           ver=1.16.1
           curl -sSL -o /tmp/renode.tar.gz "https://github.com/renode/renode/releases/download/v${ver}/renode-${ver}.linux-portable.tar.gz"
-          mkdir -p "$HOME/.local/renode"
+          mkdir -p "$HOME/.local/renode" "$HOME/.local/bin"
           tar -xzf /tmp/renode.tar.gz -C "$HOME/.local/renode" --strip-components=1
           ln -sf "$HOME/.local/renode/renode" "$HOME/.local/bin/renode"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
