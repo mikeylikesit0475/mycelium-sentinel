@@ -15,6 +15,7 @@
 
 pub mod dsp;
 pub mod protocol;
+pub mod spike_detect;
 
 /// Firmware version reported over the UART at boot.
 pub const FW_VERSION: &str = "0.0.0";
