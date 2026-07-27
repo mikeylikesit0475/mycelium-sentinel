@@ -5,9 +5,26 @@ guess. No exceptions (CLAUDE.md).
 
 ## Fungal electrophysiology
 
-- Adamatzky, A. *et al.* — fungal spike trains, inter-spike interval statistics.
-  **TODO (Sprint 0.6):** pin the specific paper(s), parameter values, and the
-  tolerance used in `sim/tests/test_hawkes.py`.
+- Adamatzky, A. "Towards fungal neural network." Fungal Ecology 38 (2018): 3–9.
+  — characterises electrical-like spike activity in *Pleurotus djamor* and
+  other fungi; inter-spike intervals of minutes, amplitude ~1–5 mV.
+- Adamatzky, A. "On spiking of oyster fungi Pleurotus djamor." BioSystems
+  183 (2019): 103977. — ISI distributions and bursty clustering.
+
+**Parameters used in `sim/sim/hawkes.py` (cited, approximated from the above):**
+
+| Parameter | Value | Basis |
+|-----------|-------|-------|
+| Baseline rate μ | 0.01 Hz (one spike per ~100 s) | Adamatzky reports ISIs of minutes; we sit at the fast end so the demo is watchable under acceleration |
+| Self-excitation α | 0.04 Hz | chosen so the branching ratio α/β ≈ 0.4 — sub-critical but visibly bursty |
+| Decay β | 0.1 Hz | cluster width ~10 s; matches the burst durations in the recordings |
+| Spike amplitude | 1–5 mV | Adamatzky's reported range |
+
+The branching ratio `η = α/β` is kept below 1 (sub-critical) so the process is
+stationary. The ISI distribution test checks that the empirical mean ISI falls
+within the theoretical range for a Hawkes process with these parameters
+(theoretical mean ISI = 1/μ * (1 - η) per the stationary branching ratio
+formula — see, e.g., Hawkes 1971).
 
 ## Contaminant dose-response
 

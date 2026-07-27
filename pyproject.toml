@@ -29,7 +29,7 @@ select = [
 ]
 ignore = [
   "E501",  # line length handled by formatter
-  "RUF002", "RUF003",  # ambiguous unicode in docstrings/comments — math notation is intentional
+  "RUF001", "RUF002", "RUF003",  # ambiguous unicode in strings/docstrings/comments — math notation is intentional
 ]
 
 [tool.ruff.lint.isort]
