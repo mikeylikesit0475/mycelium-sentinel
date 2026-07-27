@@ -7,7 +7,7 @@
 > is close to tautological because the simulator produces both the signal and
 > the label; the README says so in this first paragraph. (ADR-001.)
 
-[![CI](https://github.com/user/mycelium-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/user/mycelium-sentinel/actions/workflows/ci.yml)
+[![CI](https://github.com/mikeylikesit0475/mycelium-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/mikeylikesit0475/mycelium-sentinel/actions/workflows/ci.yml)
 
 ## What this is
 
