@@ -37,3 +37,8 @@ known-first-party = ["sim", "ingest"]
 
 [tool.ruff.format]
 line-ending = "lf"
+
+[tool.pytest.ini_options]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
