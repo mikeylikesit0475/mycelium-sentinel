@@ -29,6 +29,7 @@ Run from the repo root.
 | Build firmware binary for the embedded target | `make firmware-build` |
 | Boot firmware in Renode (console) | `make renode-run` |
 | Boot firmware in Renode headless, dump UART | `make renode-headless` |
+| **On-target boot test (asserted, CI gate)** | `make renode-test` |
 | Clippy gate (host + target) | `make clippy` |
 | Rustfmt gate | `make fmt-check` |
 | Python lint | `make ruff` |

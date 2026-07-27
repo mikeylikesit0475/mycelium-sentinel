@@ -55,6 +55,10 @@ renode-headless: firmware-build
 	@cat /tmp/mycelium-uart.txt
 	@echo "--- (renode log: /tmp/mycelium-renode.log) ---"
 
+.PHONY: renode-test
+renode-test: firmware-build
+	./renode/tests/on_target_boot.sh
+
 .PHONY: test-host
 test-host:
 	$(CARGO) test --features std --target $(HOST_TARGET)
@@ -85,7 +89,7 @@ test-py:
 lint: clippy fmt-check ruff
 
 .PHONY: test
-test: test-host test-py
+test: test-host test-py renode-test
 
 .PHONY: ci
 ci: lint test

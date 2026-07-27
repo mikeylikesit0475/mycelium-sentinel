@@ -102,15 +102,39 @@ jobs:
           path: target/thumbv7em-none-eabi/release/firmware-bin
           if-no-files-found: error
 
-  # renode-on-target:
-  #   name: On-target test (Renode headless) — GO/NO-GO GATE (ADR-003)
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Install Renode
-  #       ...
-  #     - name: Run on-target test
-  #       run: make renode-test
-  #
-  # Lands in Sprint 0.3. If this job can't be made green in its box, the project
-  # stops (BACKLOG.md Sprint 0.3).
+  # On-target test — the GO/NO-GO GATE (ADR-003). If this job can't be made
+  # green in its box, the project stops (BACKLOG.md Sprint 0.3).
+  renode-on-target:
+    name: On-target test (Renode headless) — GO/NO-GO GATE
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: thumbv7em-none-eabi
+
+      - name: Build firmware binary
+        run: cargo build --release --features bin-build --bin firmware-bin
+
+      - name: Install Mono (Renode runtime)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends mono-devel
+
+      - name: Install Renode (portable, user-local)
+        run: |
+          set -eu
+          ver=1.16.1
+          curl -sSL -o /tmp/renode.tar.gz "https://github.com/renode/renode/releases/download/v${ver}/renode-${ver}.linux-portable.tar.gz"
+          mkdir -p "$HOME/.local/renode"
+          tar -xzf /tmp/renode.tar.gz -C "$HOME/.local/renode" --strip-components=1
+          ln -sf "$HOME/.local/renode/renode" "$HOME/.local/bin/renode"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Verify Renode
+        run: renode --version
+
+      - name: Run on-target boot test
+        run: ./renode/tests/on_target_boot.sh
