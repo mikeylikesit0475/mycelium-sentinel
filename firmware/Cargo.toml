@@ -33,6 +33,10 @@ bin-build = []
 cortex-m = "0.7"
 cortex-m-rt = { version = "0.7", optional = true }
 panic-halt = { version = "0.2", optional = true }
+# libm provides the floating-point transcendentals (sin, cos, exp) that core
+# lacks, so the DSP filter coefficient construction works on the no_std target
+# as well as the host. (CLAUDE.md: DSP blocks must compile both ways.)
+libm = "0.2"
 
 [dependencies.embedded-hal]
 version = "1.0"
