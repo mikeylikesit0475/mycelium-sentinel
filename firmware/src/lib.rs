@@ -14,6 +14,7 @@
 // implementations in Sprint 1.
 
 pub mod dsp;
+pub mod features;
 pub mod protocol;
 pub mod spike_detect;
 
