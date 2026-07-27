@@ -143,3 +143,13 @@ firmware-up: firmware-build
 .PHONY: inject-plume
 inject-plume:
 	$(UV) run python -m sim.inject_plume --contaminant cadmium --origin 3,1
+
+.PHONY: demo
+demo: firmware-build
+	@echo "[demo] starting ingest consumer in the background..."
+	@DB_HOST=127.0.0.1 $(UV) run python -c "from ingest.consumer import IngestConsumer; c = IngestConsumer(); c.connect(); import time; time.sleep(999)" &
+	@sleep 2
+	@echo "[demo] running the live pipeline (Renode + 16 channels + MQTT + TimescaleDB + Grafana)..."
+	@$(UV) run python -m sim.demo --duration 60
+	@kill %1 2>/dev/null || true
+	@echo "[demo] done — check http://localhost:3000 for the Grafana dashboard"

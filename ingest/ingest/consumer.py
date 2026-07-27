@@ -6,8 +6,8 @@ each event to TimescaleDB. The ingest service is the bridge between the
 emulated firmware's UART output (relayed to MQTT by the sim publisher) and
 the Grafana dashboard.
 
-Sprint 1.6: MQTT consumption + TimescaleDB sink. The classifier lands in
-Sprint 2.2.
+Sprint 1.6: MQTT consumption + in-memory store.
+Sprint 2.7: TimescaleDB sink wired for the live demo.
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ import os
 import struct
 import time
 from dataclasses import asdict, dataclass
+from typing import Any
 
 import paho.mqtt.client as mqtt
 
@@ -35,6 +36,13 @@ MQTT_TOPIC = os.environ.get("MQTT_TOPIC", "mycelium/events")
 # Sim-clock acceleration factor — included in every event so the dashboard
 # can never mistake accelerated time for real time (ADR-006).
 SIM_CLOCK_FACTOR = float(os.environ.get("SIM_CLOCK_FACTOR", "1.0"))
+
+# TimescaleDB connection (optional — if not reachable, events stay in memory).
+DB_HOST = os.environ.get("DB_HOST", "127.0.0.1")
+DB_PORT = int(os.environ.get("DB_PORT", "5432"))
+DB_NAME = os.environ.get("DB_NAME", "mycelium")
+DB_USER = os.environ.get("DB_USER", "mycelium")
+DB_PASS = os.environ.get("DB_PASS", "mycelium")
 
 
 @dataclass
@@ -87,20 +95,79 @@ def decode_features(channel: int, payload: bytes) -> SpikeEvent | None:
 class IngestConsumer:
     """MQTT consumer that decodes event frames and writes them to storage.
 
-    Sprint 1.6 ships an in-memory store (a list) so the service runs without a
-    database dependency in tests. The TimescaleDB sink is wired but optional —
-    if the DB isn't reachable, events are still collected in memory.
+    Events are always collected in memory. If a TimescaleDB connection is
+    available, events are also written to the `spike_events` hypertable for
+    the Grafana dashboard.
     """
 
     def __init__(self) -> None:
         self.events: list[SpikeEvent] = []
         self._client: mqtt.Client | None = None
+        self._db: Any = None
 
-    def on_connect(self, client: mqtt.Client, _userdata, _flags, rc: int) -> None:
-        logger.info("connected to MQTT broker (rc=%d), subscribing to %s", rc, MQTT_TOPIC)
+    def _db_connect(self) -> Any | None:
+        """Try to connect to TimescaleDB. Returns a connection or None."""
+        try:
+            import psycopg
+
+            conn = psycopg.connect(
+                host=DB_HOST,
+                port=DB_PORT,
+                dbname=DB_NAME,
+                user=DB_USER,
+                password=DB_PASS,
+            )
+            conn.autocommit = True
+            logger.info("connected to TimescaleDB at %s:%d", DB_HOST, DB_PORT)
+            return conn
+        except Exception as e:
+            logger.info("TimescaleDB not available (events in-memory only): %s", e)
+            return None
+
+    def _db_write(self, event: SpikeEvent) -> None:
+        """Write an event to TimescaleDB if connected."""
+        if self._db is None:
+            return
+        try:
+            # psycopg handles Python lists as PostgreSQL arrays natively.
+            self._db.execute(
+                """
+                INSERT INTO spike_events
+                    (time, channel, count, amplitude, amplitude_mean,
+                     amplitude_std, amplitude_min, amplitude_max,
+                     isi_mean, isi_std, isi_min, isi_max,
+                     burst_index, rate, histogram, sim_clock_factor)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(event.timestamp)),
+                    event.channel,
+                    event.count,
+                    event.amplitude,
+                    event.amplitude_mean,
+                    event.amplitude_std,
+                    event.amplitude_min,
+                    event.amplitude_max,
+                    event.isi_mean,
+                    event.isi_std,
+                    event.isi_min,
+                    event.isi_max,
+                    event.burst_index,
+                    event.rate,
+                    event.histogram,  # psycopg converts list[int] -> integer[]
+                    event.sim_clock_factor,
+                ),
+            )
+        except Exception as e:
+            logger.warning("DB write failed: %s", e)
+
+    def on_connect(self, client: mqtt.Client, _userdata, _flags, rc, _properties=None) -> None:
+        logger.info("connected to MQTT broker (rc=%s), subscribing to %s", rc, MQTT_TOPIC)
         client.subscribe(MQTT_TOPIC)
 
-    def on_message(self, _client: mqtt.Client, _userdata, msg: mqtt.MQTTMessage) -> None:
+    def on_message(
+        self, _client: mqtt.Client, _userdata, msg: mqtt.MQTTMessage, _properties=None
+    ) -> None:
         # The MQTT payload is a JSON envelope: {"channel": N, "payload": "<hex>"}
         # The hex payload is the raw SpikeFeatures bytes from the firmware.
         try:
@@ -115,6 +182,7 @@ class IngestConsumer:
             logger.warning("undecodable features payload (len=%d)", len(payload))
             return
         self.events.append(event)
+        self._db_write(event)
         logger.info(
             "event ch=%d amp=%.3f count=%d rate=%.2f",
             event.channel,
@@ -124,6 +192,7 @@ class IngestConsumer:
         )
 
     def connect(self) -> None:
+        self._db = self._db_connect()
         client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         client.on_connect = self.on_connect
         client.on_message = self.on_message
