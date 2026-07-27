@@ -1,0 +1,18 @@
+[project]
+name = "ingest"
+version = "0.0.0"
+description = "Mycelium Sentinel ingest: MQTT consumer, classifier, alerting, TimescaleDB sink."
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=2.0",
+  "paho-mqtt>=2.0",
+  "psycopg[binary]>=3.1",
+  "pydantic>=2.0",
+  "xgboost>=2.0",
+]
+
+[tool.uv]
+package = true
+
+[tool.ruff]
+extend = "../pyproject.toml"

@@ -1,0 +1,116 @@
+name: CI
+
+# Mycelium Sentinel — CI parity with local `make ci`.
+#
+# Sprint 0.1 ships the lint + host-test skeleton. Sprint 0.3 adds the on-target
+# Renode job — that's the go/no-go gate (ADR-003). When it lands it gets its own
+# job below and a status badge in the README.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  lint:
+    name: Lint (clippy, rustfmt, ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (stable, with clippy + rustfmt)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+          targets: thumbv7em-none-eabi
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Sync Python env
+        run: uv sync --all-packages
+
+      - name: Rustfmt check
+        run: cargo fmt --all -- --check
+
+      - name: Clippy (host)
+        run: cargo clippy --features std --target x86_64-unknown-linux-gnu -- -D warnings
+
+      - name: Clippy (target)
+        run: cargo clippy --release --features bin-build --bin firmware-bin -- -D warnings
+
+      - name: Ruff format check
+        run: uv run ruff format --check sim ingest
+
+      - name: Ruff lint
+        run: uv run ruff check sim ingest
+
+  host-tests:
+    name: Host unit tests (DSP, protocol, sim, ingest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Sync Python env
+        run: uv sync --all-packages
+
+      - name: Firmware host tests (DSP, protocol)
+        run: cargo test --features std --target x86_64-unknown-linux-gnu
+
+      - name: Python tests (sim, ingest)
+        run: uv run pytest sim ingest
+
+  firmware-build:
+    name: Build firmware binary (thumbv7em-none-eabi)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: thumbv7em-none-eabi
+
+      - name: Build firmware binary
+        run: cargo build --release --features bin-build --bin firmware-bin
+
+      - name: Upload firmware binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-bin
+          path: target/thumbv7em-none-eabi/release/firmware-bin
+          if-no-files-found: error
+
+  # renode-on-target:
+  #   name: On-target test (Renode headless) — GO/NO-GO GATE (ADR-003)
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Install Renode
+  #       ...
+  #     - name: Run on-target test
+  #       run: make renode-test
+  #
+  # Lands in Sprint 0.3. If this job can't be made green in its box, the project
+  # stops (BACKLOG.md Sprint 0.3).

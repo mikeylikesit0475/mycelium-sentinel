@@ -1,0 +1,20 @@
+# Build artifacts
+/target
+/.venv
+**/__pycache__/
+**/*.pyc
+*.egg-info/
+.coverage
+.pytest_cache/
+.ruff_cache
+
+# Renode runtime artifacts
+renode/*.log
+renode/dumps/
+*.resc.log
+
+# Local config / editor
+.vscode/
+.idea/
+*.swp
+.DS_Store

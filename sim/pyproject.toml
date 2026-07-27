@@ -1,0 +1,18 @@
+[project]
+name = "sim"
+version = "0.0.0"
+description = "Mycelium Sentinel simulator: advection-diffusion grid, Hawkes spike model, electrode/ADC front end."
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=2.0",
+  "scipy>=1.13",
+  "matplotlib>=3.8",
+  "paho-mqtt>=2.0",
+  "pydantic>=2.0",
+]
+
+[tool.uv]
+package = true
+
+[tool.ruff]
+extend = "../pyproject.toml"

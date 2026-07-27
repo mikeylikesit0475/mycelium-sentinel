@@ -1,0 +1,12 @@
+# Cargo configuration for Mycelium Sentinel.
+#
+# The default build target is the embedded thumb target so `cargo build` from
+# the repo root builds firmware, not host code. Host unit tests override the
+# target via `--target` / `cargo test` (see Makefile `test-host`).
+
+[build]
+target = "thumbv7em-none-eabi"
+
+# The firmware binary needs the `bin-build` feature and the embedded target.
+# We pin it so `cargo build` from the root does the right thing without flags.
+# Host tests run with `cargo test --features std --target x86_64-unknown-linux-gnu` (see Makefile).

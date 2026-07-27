@@ -1,0 +1,69 @@
+[package]
+name = "firmware"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Mycelium Sentinel firmware: no_std signal chain for an emulated nRF52840 / STM32F4"
+
+[lib]
+name = "firmware"
+path = "src/lib.rs"
+# A no_std rlib: usable by the binary and by host tests.
+crate-type = ["rlib"]
+
+# The on-target binary is a separate target that only builds for the embedded
+# arm-none target. Host `cargo test` skips it because it is gated by
+# `required-features` that are only set in the embedded build profile.
+[[bin]]
+name = "firmware-bin"
+path = "src/bin/main.rs"
+required-features = ["bin-build"]
+
+[features]
+default = []
+# DSP blocks compile for the host so unit tests can exercise filter response and
+# MAD thresholding without an emulator (ARCHITECTURE.md §7, row 1).
+std = []
+# Pull in the binary's panic/entry glue only when building the on-target binary.
+bin-build = []
+
+[dependencies]
+# Core-only: no alloc, no std. every dependency here must be no_std.
+cortex-m = "0.7"
+cortex-m-rt = { version = "0.7", optional = true }
+panic-halt = { version = "0.2", optional = true }
+
+[dependencies.embedded-hal]
+version = "1.0"
+
+[dev-dependencies]
+# Host-side test deps only — never cross-compile.
+approx = "0.5"
+proptest = "1"
+
+# The on-target binary needs cortex-m-rt for the reset handler and panic-halt for the
+# panic handler. We only enable them when building the binary for the device.
+[target.'cfg(all(target_arch = "arm", target_os = "none"))'.dependencies]
+cortex-m-rt = "0.7"
+panic-halt = "0.2"
+
+[lints]
+workspace = true
+# Note: the lib crate (src/lib.rs, src/dsp.rs, src/protocol.rs) keeps
+# `unsafe` out by code review and host tests. The binary (src/bin/main.rs) is
+# allowed the minimum `unsafe` needed for MMIO and the reset vector, which is
+# why `unsafe_code = "deny"` is NOT set at the workspace level.
+
+# Host unit tests run against the std feature so the same DSP blocks used in the
+# emulator are exercised on the host too. (CLAUDE.md: "Don't let a block become
+# emulator-only.")
+[[test]]
+name = "dsp"
+path = "tests/dsp.rs"
+required-features = ["std"]
+
+[[test]]
+name = "spike_detect"
+path = "tests/spike_detect.rs"
+required-features = ["std"]

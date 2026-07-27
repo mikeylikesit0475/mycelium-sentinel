@@ -1,0 +1,25 @@
+[workspace]
+resolver = "2"
+members = ["firmware"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Michael F"]
+
+[workspace.lints.rust]
+# Note: `unsafe_code = "deny"` is intentionally NOT set at the workspace level.
+# Embedded entry points and register access require `unsafe`. The library crate
+# (`firmware/src/lib.rs`) opts into `unsafe_code = "deny"` via its own `[lints]`
+# table so the DSP/protocol blocks stay unsafe-free, while the binary can use
+# the minimum necessary unsafe for MMIO and the reset vector.
+
+[workspace.lints.clippy]
+# -D warnings enforced in CI; keep it clean here too.
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# Pedantic noise we accept as idiomatic embedded style:
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+needless_pass_by_value = "allow"
