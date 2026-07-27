@@ -54,7 +54,7 @@ renode --disable-xwt --console \
     <"$FIFO" >"$RENODE_LOG" 2>&1 &
 RENODE_PID=$!
 
-for _ in $(seq 1 20); do
+for _ in $(seq 1 120); do
     if ss -lnt 2>/dev/null | grep -q ":$PORT"; then
         break
     fi

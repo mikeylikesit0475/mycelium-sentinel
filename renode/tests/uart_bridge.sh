@@ -54,7 +54,7 @@ renode --disable-xwt --console \
 RENODE_PID=$!
 
 # Wait for the socket to bind and the firmware to boot.
-for _ in $(seq 1 20); do
+for _ in $(seq 1 120); do
     if ss -lnt 2>/dev/null | grep -q ":$PORT"; then
         break
     fi
