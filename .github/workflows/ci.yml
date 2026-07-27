@@ -138,3 +138,6 @@ jobs:
 
       - name: Run on-target boot test
         run: ./renode/tests/on_target_boot.sh
+
+      - name: Run virtual UART bridge test
+        run: ./renode/tests/uart_bridge.sh

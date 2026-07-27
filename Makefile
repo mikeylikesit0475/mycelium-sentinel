@@ -59,6 +59,10 @@ renode-headless: firmware-build
 renode-test: firmware-build
 	./renode/tests/on_target_boot.sh
 
+.PHONY: bridge-test
+bridge-test: firmware-build
+	./renode/tests/uart_bridge.sh
+
 .PHONY: test-host
 test-host:
 	$(CARGO) test --features std --target $(HOST_TARGET)

@@ -98,6 +98,97 @@ impl Frame {
     }
 }
 
+/// A streaming frame decoder for byte-at-a-time input (e.g. from a UART RX
+/// poll loop). Feeding bytes one at a time produces complete frames when the
+/// EOF marker arrives. Alloc-free: state is a small fixed buffer.
+#[derive(Debug, Clone, Copy)]
+pub struct FrameDecoder {
+    state: DecodeState,
+    channel: u8,
+    len: u8,
+    idx: u8,
+    payload: PayloadBuf,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DecodeState {
+    Idle,
+    GotSof,
+    GotChannel,
+    InPayload,
+}
+
+impl Default for FrameDecoder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl FrameDecoder {
+    /// Construct a new decoder ready to receive bytes.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            state: DecodeState::Idle,
+            channel: 0,
+            len: 0,
+            idx: 0,
+            payload: [0; MAX_PAYLOAD],
+        }
+    }
+
+    /// Feed one byte. Returns `Some(Frame)` when a complete, valid frame has
+    /// arrived; `None` while still accumulating or after a framing error reset.
+    #[must_use]
+    pub fn feed(&mut self, byte: u8) -> Option<Frame> {
+        match self.state {
+            DecodeState::Idle => {
+                if byte == SOF {
+                    self.state = DecodeState::GotSof;
+                }
+                None
+            }
+            DecodeState::GotSof => {
+                self.channel = byte;
+                self.state = DecodeState::GotChannel;
+                None
+            }
+            DecodeState::GotChannel => {
+                self.len = byte;
+                self.idx = 0;
+                if byte == 0 {
+                    // Empty payload: next byte must be EOF.
+                    self.state = DecodeState::InPayload;
+                } else {
+                    self.state = DecodeState::InPayload;
+                }
+                None
+            }
+            DecodeState::InPayload => {
+                if usize::from(self.idx) < usize::from(self.len) {
+                    self.payload[usize::from(self.idx)] = byte;
+                    self.idx = self.idx.saturating_add(1);
+                } else if byte == EOF {
+                    // Complete frame: copy out and reset.
+                    let frame =
+                        Frame::from_slice(self.channel, &self.payload[..usize::from(self.len)]);
+                    *self = Self::new();
+                    return frame;
+                } else {
+                    // Framing error: reset.
+                    *self = Self::new();
+                }
+                None
+            }
+        }
+    }
+
+    /// Reset the decoder to the idle state, discarding any partial frame.
+    pub fn reset(&mut self) {
+        *self = Self::new();
+    }
+}
+
 #[cfg(all(test, feature = "std"))]
 mod tests {
     use super::*;
@@ -128,5 +219,51 @@ mod tests {
         let mut bytes = [SOF, 1, 1, 0xAB, 0x00]; // EOF byte wrong
         let _ = &mut bytes;
         assert!(Frame::decode(&bytes).is_none());
+    }
+
+    #[test]
+    fn decoder_assembles_frame_byte_by_byte() {
+        let mut d = FrameDecoder::new();
+        // SOF, channel=5, len=3, payload [9,9,9], EOF
+        let stream = [SOF, 5, 3, 9, 9, 9, EOF];
+        let mut got: Option<Frame> = None;
+        for (i, b) in stream.iter().enumerate() {
+            got = d.feed(*b);
+            if i < stream.len() - 1 {
+                assert!(got.is_none(), "unexpected early frame at byte {i}");
+            }
+        }
+        let f = got.expect("final byte yields a frame");
+        assert_eq!(f.channel, 5);
+        assert_eq!(f.len, 3);
+        assert_eq!(f.payload_bytes(), &[9, 9, 9]);
+    }
+
+    #[test]
+    fn decoder_resets_on_garbage_between_frames() {
+        let mut d = FrameDecoder::new();
+        // Garbage then a valid frame.
+        for b in [0x00, 0x11, 0x22] {
+            assert!(d.feed(b).is_none());
+        }
+        let stream = [SOF, 2, 1, 0xAB, EOF];
+        let mut got: Option<Frame> = None;
+        for b in stream {
+            got = d.feed(b);
+        }
+        let f = got.expect("frame after garbage");
+        assert_eq!(f.channel, 2);
+        assert_eq!(f.payload_bytes(), &[0xAB]);
+    }
+
+    #[test]
+    fn decoder_handles_empty_payload() {
+        let mut d = FrameDecoder::new();
+        assert!(d.feed(SOF).is_none());
+        assert!(d.feed(0).is_none());
+        assert!(d.feed(0).is_none()); // len=0
+        let f = d.feed(EOF).expect("empty frame completes");
+        assert_eq!(f.len, 0);
+        assert_eq!(f.channel, 0);
     }
 }
