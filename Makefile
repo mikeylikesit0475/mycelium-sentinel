@@ -142,7 +142,4 @@ firmware-up: firmware-build
 
 .PHONY: inject-plume
 inject-plume:
-	@echo "Plume injection is handled by the simulator (sim/sim/lead_time.py)."
-	@echo "Run the lead-time measurement with:"
-	@echo "  uv run pytest sim/tests/test_lead_time.py -v"
-	@echo "  uv run python -c 'from sim.lead_time import measure_lead_time; print(measure_lead_time((3,1)))'"
+	$(UV) run python -m sim.inject_plume --contaminant cadmium --origin 3,1
