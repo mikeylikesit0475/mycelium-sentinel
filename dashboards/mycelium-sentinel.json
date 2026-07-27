@@ -1,0 +1,70 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {"type": "grafana", "uid": "-- Grafana --"},
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "title": "Mycelium Sentinel — 16-channel spike monitor",
+  "panels": [
+    {
+      "type": "text",
+      "title": "Sim-clock factor (NEVER MISTAKE FOR REAL-TIME)",
+      "gridPos": {"h": 3, "w": 24, "x": 0, "y": 0},
+      "options": {
+        "content": "# Sim-clock: ${SIM_CLOCK_FACTOR}x\nReal mycelial ISIs are minutes to hours. This demo is accelerated. The factor above is shown at all times so the demo never implies real-time detection (ADR-006).",
+        "mode": "markdown"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Spike amplitude per channel",
+      "datasource": {"type": "postgres", "uid": "TimescaleDB"},
+      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 3},
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT timestamp AS time, channel AS metric, amplitude AS value FROM spike_events ORDER BY time",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Spike rate per channel (Hz)",
+      "datasource": {"type": "postgres", "uid": "TimescaleDB"},
+      "gridPos": {"h": 10, "w": 12, "x": 12, "y": 3},
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT timestamp AS time, channel AS metric, rate AS value FROM spike_events ORDER BY time",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "Burst index per channel (>1 = burst)",
+      "datasource": {"type": "postgres", "uid": "TimescaleDB"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 13},
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT channel, burst_index FROM spike_events ORDER BY timestamp DESC LIMIT 16",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "uid": "mycelium-sentinel"
+}
